@@ -36,8 +36,21 @@
 #include <typeinfo>
 #include <cstring>
 #include <algorithm>
-#include <cxxabi.h>
 #include <cstdlib>
+
+#if !defined(CMDLINE_NO_CXXABI)
+#  if defined(__has_include)
+#    if __has_include(<cxxabi.h>)
+#      define CMDLINE_HAS_CXXABI 1
+#    endif
+#  elif defined(__GNUC__)
+#    define CMDLINE_HAS_CXXABI 1
+#  endif
+#endif
+
+#ifdef CMDLINE_HAS_CXXABI
+#include <cxxabi.h>
+#endif
 
 namespace cmdline{
 
@@ -104,11 +117,16 @@ Target lexical_cast(const Source &arg)
 
 static inline std::string demangle(const std::string &name)
 {
+#ifdef CMDLINE_HAS_CXXABI
   int status=0;
   char *p=abi::__cxa_demangle(name.c_str(), 0, 0, &status);
+  if (!p) return name;
   std::string ret(p);
   free(p);
   return ret;
+#else
+  return name;
+#endif
 }
 
 template <class T>
